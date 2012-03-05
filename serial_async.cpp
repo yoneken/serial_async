@@ -7,7 +7,7 @@
 using namespace boost::asio;
 
 static bool isRunning(true);
-const char *PORT = "/dev/tty.usbserial";
+const char *PORT = "/dev/ttyUSB0";
 io_service io;
 serial_port port( io, PORT );
 boost::array<char, 64> rbuf;

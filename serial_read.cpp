@@ -10,7 +10,6 @@ using namespace boost::asio;
 using namespace boost::posix_time;
 
 typedef struct _Force{
-	double rad_xy;
 	double Fx;
 	double Fy;
 	double Fz;
@@ -28,7 +27,7 @@ int fp = 0;
 char fbuf[128] = {0};
 std::ofstream ofs;
 boost::mutex mtx;
-_Force f42, f45;
+_Force f;
 
 static void waitKeyPressed(void)
 {
@@ -45,14 +44,10 @@ void read_callback(const boost::system::error_code& e, std::size_t size)
 		fbuf[fp++] = c;
 		if(c == '\n'){
 			fp = 0;
-			int f42_fx, f42_fy, f42_fz, f42_mx, f42_my, f42_mz;
-			int f45_fx, f45_fy, f45_fz, f45_mx, f45_my, f45_mz;
-			sscanf(fbuf, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
-				&f42_fx, &f42_fy, &f42_fz, &f42_mx, &f42_my, &f42_mz,
-				&f45_fx, &f45_fy, &f45_fz, &f45_mx, &f45_my, &f45_mz);
-			f42.rad_xy = atan2(f42_my, f42_mx);
-			f45.rad_xy = atan2(f45_my, f45_mx);
-			printf("% 3.2f, % 3.2f\r\n", f42.rad_xy, f45.rad_xy);
+			int fx, fy, fz, mx, my, mz;
+			sscanf(fbuf, "%d,%d,%d,%d,%d,%d\r\n",
+				&fx, &fy, &fz, &mx, &my, &mz);
+			printf("% 3.2f, % 3.2f\r\n", fx/32767.0, fy/32767.0);
 		}
 	}
 
