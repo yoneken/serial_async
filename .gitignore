@@ -1,0 +1,9 @@
+.DS_Store
+*.o
+*.swp
+*.swo
+serial_sync
+serial_async
+serial_save
+serial_read
+serial_show
