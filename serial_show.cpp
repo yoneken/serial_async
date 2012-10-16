@@ -9,6 +9,8 @@
 #include <GLUT/glut.h>
 #include <stdlib.h>
 
+//#define FILE_SAVE
+
 using namespace boost::asio;
 using namespace boost::posix_time;
 
@@ -37,7 +39,9 @@ void read_callback(const boost::system::error_code& e, std::size_t size)
 		char c = rbuf.at(i);
 		fbuf[fp++] = c;
 		if(c == '\n'){
-			//ofs.write(fbuf, fp);
+#ifdef FILE_SAVE
+			ofs.write(fbuf, fp);
+#endif /* FILE_SAVE */
 			int time;
 			double value;
 			sscanf(fbuf, "%d,%lf\r\n",
@@ -106,10 +110,14 @@ void DrawGLScene()
 	
 	int p = val_pointer;
 	glColor3ub(255, 255, 0);	// Draw In Yellow
-	glBegin(GL_POINTS);
-	for(int i=0;i<640;i++){
+	glBegin(GL_LINES);
+	for(int i=0;i<640-1;i++){
+		int p2;
 		if(p == 640) p = 0;
+		if(p != 640-1) p2 = p+1;
+		else p2 = 0;
 		glVertex2i( i, (int)(val[p]*amp)+20);
+		glVertex2i( i+1, (int)(val[p2]*amp)+20);
 		p++;
 	}
 	glEnd();
@@ -144,12 +152,12 @@ int main(int argc, char *argv[])
 		if(d!=0) amp = d;
 		else amp = 1000.0;
 	}
-/*
+#ifdef FILE_SAVE
 	ptime now = second_clock::local_time();
-	std::string logname = to_iso_string(now) + std::string(".log");
+	std::string logname = to_iso_string(now) + std::string(".csv");
 	ofs.open(logname.c_str());
-*/
-	port.set_option(serial_port_base::baud_rate(115200));
+#endif /* FILE_SAVE */
+	port.set_option(serial_port_base::baud_rate(57600));
 	port.set_option(serial_port_base::character_size(8));
 	port.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
 	port.set_option(serial_port_base::parity(serial_port_base::parity::none));
