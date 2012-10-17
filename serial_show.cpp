@@ -32,7 +32,9 @@ char s[30];									// Tmp variable for storing the display strings
 
 int val[640];
 int val_pointer = 0;
-int param_div = 100;
+volatile unsigned long sample_num = 0;
+int param_divx = 100;
+int param_divy = 100;
 int state_num = 0;
 int result;
 double amp = 1000.0;
@@ -77,7 +79,7 @@ void read_callback(const boost::system::error_code& e, std::size_t size)
 			//printf("%d\r\n", result);
 			val[val_pointer++] = result;
 			if(val_pointer == 640) val_pointer = 0;
-			
+			sample_num++;
 #ifdef FILE_SAVE
 			ptime now = second_clock::local_time();
 			ofs << to_iso_string(now) << "," << result << std::endl;
@@ -165,11 +167,11 @@ void DrawGLScene()
 		glVertex2i( 20,DEFAULT_HEIGHT-1);
 	glEnd();
 	// X divider
-	int dx0 = 100 - (val_pointer % 100);
-	int dx1 = val_pointer / 100 + 1;
+	int dx0 = ((double)(param_divx - (sample_num % param_divx)))/((double)param_divx/100);
+	int dx1 = sample_num / param_divx + 1;
 	for(int i=0;i<6;i++){
 		char divider[8];
-		sprintf(divider, "%d", (dx1+i)*100);
+		sprintf(divider, "%d", (dx1+i)*param_divx);
 		glPrint( 20+dx0-8+100*i, 5, (void *)font, divider);
 		glBegin(GL_LINE_STRIP);
 			glVertex2i( 20+dx0+100*i, 20);
@@ -179,7 +181,7 @@ void DrawGLScene()
 	// Y divider
 	for(int i=0;i<4;i++){
 		char divider[8];
-		sprintf(divider, "%d", param_div*(i+1));
+		sprintf(divider, "%d", param_divy*(i+1));
 		glPrint( 2, 20-5+100*(i+1), (void *)font, divider);
 		glBegin(GL_LINE_STRIP);
 			glVertex2i( 20, 20+100*(i+1));
@@ -191,13 +193,13 @@ void DrawGLScene()
 	glColor3ub(255, 255, 0);	// Draw In Yellow
 	int p = val_pointer;
 	glBegin(GL_LINES);
-	for(int i=0;i<DEFAULT_WIDTH-1;i++){
+	for(int i=0;i<(int)(DEFAULT_WIDTH*((double)param_divx/100.0))-1;i++){
 		int p2;
 		if(p == DEFAULT_WIDTH) p = 0;
 		if(p != DEFAULT_WIDTH-1) p2 = p+1;
 		else p2 = 0;
-		glVertex2i( 20+i, (int)(val[p]/((double)param_div/100.0))+20);
-		glVertex2i( 20+i+1, (int)(val[p2]/((double)param_div/100.0))+20);
+		glVertex2i( 20+(int)(i/((double)param_divx/100.0)), (int)(val[p]/((double)param_divy/100.0))+20);
+		glVertex2i( 20+(int)((i+1)/((double)param_divx/100.0)), (int)(val[p2]/((double)param_divy/100.0))+20);
 		p++;
 	}
 	glEnd();
@@ -216,11 +218,18 @@ void NormalKeyPressed(unsigned char keys, int x, int y)
 		exit(0);
 		break;
 	  case 'z':
-		param_div /= 2;
-		if(param_div < 2) param_div = 2;
+		param_divy /= 2;
+		if(param_divy < 2) param_divy = 2;
 		break;
 	  case 'Z':
-		param_div *= 2;
+		param_divy *= 2;
+		break;
+	  case 't':
+		param_divx /= 2;
+		if(param_divx < 2) param_divx = 2;
+		break;
+	  case 'T':
+		param_divx *= 2;
 		break;
 	}
 }
