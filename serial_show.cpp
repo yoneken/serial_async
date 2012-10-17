@@ -196,8 +196,8 @@ void DrawGLScene()
 		if(p == DEFAULT_WIDTH) p = 0;
 		if(p != DEFAULT_WIDTH-1) p2 = p+1;
 		else p2 = 0;
-		glVertex2i( 20+i, (int)(val[p]*(param_div/100))+20);
-		glVertex2i( 20+i+1, (int)(val[p2]*(param_div/100))+20);
+		glVertex2i( 20+i, (int)(val[p]/((double)param_div/100.0))+20);
+		glVertex2i( 20+i+1, (int)(val[p2]/((double)param_div/100.0))+20);
 		p++;
 	}
 	glEnd();
