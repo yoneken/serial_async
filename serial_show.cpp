@@ -30,9 +30,10 @@ int window;
 void **font=GLUT_BITMAP_HELVETICA_10;		// For printing bitmap fonts
 char s[30];									// Tmp variable for storing the display strings
 
-int val[640];
-int val_pointer = 0;
+volatile int val[640];
+volatile int val_pointer = 0;
 volatile unsigned long sample_num = 0;
+volatile bool flag_receive_datas = true;
 int param_divx = 100;
 int param_divy = 100;
 int state_num = 0;
@@ -45,45 +46,41 @@ void read_callback(const boost::system::error_code& e, std::size_t size)
 
 	for(unsigned int i=0;i<size;i++){
 		unsigned char c = rbuf.at(i);
-/*		fbuf[fp++] = c;
-		if(c == '\n'){
-			fbuf[fp] = 0x0;
-			printf("%s", fbuf);
-			fp = 0;
-		}
-*/
-//		printf("%d: %x \r\n", state_num, c);
-		switch(state_num){
-		  case 0:
-		  case 1:
-			if(c == 0xaa) state_num++;
-			else state_num = 0;
-			break;
-		  case 2:
-			if(c == 0x02) state_num++;
-			else state_num = 0;
-			break;
-		  case 3:
-			result = c<<8;
-			state_num++;
-			break;
-		  case 4:
-			result |= c;
-			state_num++;
-			break;
-		  default:
-			state_num = 0;
-		}
-		
-		if(state_num == 5){
-			//printf("%d\r\n", result);
-			val[val_pointer++] = result;
-			if(val_pointer == 640) val_pointer = 0;
-			sample_num++;
+		if(flag_receive_datas){
+			switch(state_num){
+			  case 0:
+			  case 1:
+				if(c == 0xaa) state_num++;
+				else state_num = 0;
+				break;
+			  case 2:
+				if(c == 0x02) state_num++;
+				else state_num = 0;
+				break;
+			  case 3:
+				result = c<<8;
+				state_num++;
+				break;
+			  case 4:
+				result |= c;
+				state_num++;
+				break;
+			  default:
+				state_num = 0;
+			}
+			
+			if(state_num == 5){
+				//printf("%d\r\n", result);
+				val[val_pointer++] = result;
+				if(val_pointer == 640) val_pointer = 0;
+				sample_num++;
 #ifdef FILE_SAVE
-			ptime now = second_clock::local_time();
-			ofs << to_iso_string(now) << "," << result << std::endl;
+				ptime now = second_clock::local_time();
+				ofs << to_iso_string(now) << "," << result << std::endl;
 #endif /* FILE_SAVE */
+			}
+		}else{
+			state_num = 0;
 		}
 	}
 
@@ -145,16 +142,24 @@ void ReSizeGLScene(int _width, int _height)
 	glMatrixMode(GL_MODELVIEW);
 }
 
-/*
- * @brief The main drawing function.
- */
-void DrawGLScene()
+void showFeatures()
 {
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glDisableClientState(GL_COLOR_ARRAY);
-	
-	// Draw Axis
+	const int FEATURE_NUM = 5;
+	char *features[FEATURE_NUM] = {
+				"Press s for toggle to receieve sample datas.",
+				"Press z for zooming in the y-axis.",
+				"Press Z for zooming out the y-axis.",
+				"Press t for zooming in the x-axis.",
+				"Press T for zooming out the x-axis."
+			};
+	glColor3ub(255, 255, 255);	// Draw In White
+	for(int i=0;i<FEATURE_NUM;i++){
+		glPrint( DEFAULT_WIDTH-240, DEFAULT_HEIGHT-20-12*i, (void *)font, features[i]);
+	}
+}
+
+void drawAxis()
+{
 	glColor3ub(100, 100, 100);	// Draw In Gray
 	// X-axis
 	glBegin(GL_LINES);
@@ -188,6 +193,18 @@ void DrawGLScene()
 			glVertex2i(DEFAULT_WIDTH-1, 20+100*(i+1));
 		glEnd();
 	}
+}
+
+/*
+ * @brief The main drawing function.
+ */
+void DrawGLScene()
+{
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glDisableClientState(GL_COLOR_ARRAY);
+	
+	drawAxis();
 	
 	// Draw values
 	glColor3ub(255, 255, 0);	// Draw In Yellow
@@ -204,6 +221,8 @@ void DrawGLScene()
 	}
 	glEnd();
 	
+	showFeatures();
+	
 	glFlush ();
 	glutSwapBuffers();
 }
@@ -216,6 +235,10 @@ void NormalKeyPressed(unsigned char keys, int x, int y)
 	switch(keys){
 	  case KEY_ESCAPE:
 		exit(0);
+		break;
+	  case 's':
+	  case 'S':
+		flag_receive_datas ^= true;
 		break;
 	  case 'z':
 		param_divy /= 2;
